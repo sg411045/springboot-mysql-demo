@@ -149,7 +149,7 @@ add properties for database
 
 # mysql properties
 
-spring.datasource.url=jdbc:mysql://mysqldbinstance.cusgvfry1fwy.ap-south-1.rds.amazonaws.com:3306/employee
+spring.datasource.url=jdbc:mysql://mysqldbinstance.amazonaws.com:3306/employee
 spring.datasource.username=empapp
 spring.datasource.password=empapppassword    
 
