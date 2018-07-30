@@ -1,0 +1,176 @@
+1. From Spring initializer setup a new project with Web and JPA dependencies
+2. Download and import project into IDE of choice
+3. Package the application
+4. Add h2 dependencies
+    <dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+5. Create an Employee class
+@Entity
+public class Employee {
+
+  @Id
+  @GeneratedValue
+  private Long id;
+
+  @Column(unique = true)
+  private String empNo;
+
+  private String empName;
+  private String department;
+
+  public Employee() {
+  }
+
+  public Employee(String empNo, String empName, String department) {
+    this.empNo = empNo;
+    this.empName = empName;
+    this.department = department;
+  }
+}
+
+6. Add additional constructors and getter setters
+
+7. Add the employeeRepository class
+
+public interface EmployeeRepository extends PagingAndSortingRepository<Employee,Long> {
+  Employee findByEmpNo(String empNo);
+}
+
+8. In the controller class define the endpoint
+private final EmployeeRepository repository;
+
+  public EmployeeController(EmployeeRepository repository) {
+    this.repository = repository;
+  }
+
+  @GetMapping("/employee/{empNo}")
+  @ResponseBody
+  public Employee fetchEmployee(@PathVariable String empNo) {
+    return repository.findByEmpNo(empNo);
+  }
+
+ 9. Test using the browser http://localhost:8080/employee/1001
+
+
+10. Install dev-tools to help debug with in memory database
+        <!-- view the h2 console -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+		</dependency>
+
+11. Browse in browser of choice
+http://localhost:8080/h2-console
+jdbc:h2:mem:testdb
+
+12. Insert into table and test
+INSERT INTO EMPLOYEE (Id, department, emp_No, emp_name)
+VALUES (1, 'ATA', '1001', 'Kohli');
+
+13. Create db using the scripts under db.migration
+CREATE TABLE employee (
+    id          IDENTITY NOT NULL PRIMARY KEY,
+    department  VARCHAR(50) NOT NULL,
+    emp_name    VARCHAR(50) NOT NULL,
+    emp_no      VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE INDEX idx_emp_no
+    ON employee (emp_no);
+
+14. Add the migration dependency
+<!-- initialise using scripts -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+</dependency>
+
+=== unit testing
+
+15. Setup a service test class 
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class EmployeeServiceTest {
+
+  @Autowired
+  EmployeeService service;
+
+  @Test
+  public void testForRead() {
+    Employee kohli = service.findEmployeeByEmpNo("1001");
+    assertEquals("Kohli", kohli.getEmpName());
+  }
+}
+
+16. controller test
+@RunWith(SpringRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class EmployeeControllerTest {
+
+  @Autowired
+  private TestRestTemplate restTemplate;
+
+  @Test
+  public void exampleTest() {
+    String body = this.restTemplate.getForObject("/employee/1001", String.class);
+    System.out.println(body);
+    assertThat(body).isEqualTo("{\"empNo\":\"1001\",\"empName\":\"Kohli\",\"department\":\"ATA\"}");
+  }
+}
+
+
+17. use docker to run a local mysql instance
+
+docker pull mysql/mysql-server:5.7
+docker run -p 3306:3306 --name=mysql1 -e MYSQL_ROOT_PASSWORD=mysqlrootpassword  -d mysql/mysql-server:5.7
+docker exec -it mysql1 mysql -u root -p
+create database employee;
+create user empapp identified by empapppassword;
+
+CREATE USER 'empapp'@'%' IDENTIFIED BY 'empapppassword';
+GRANT ALL PRIVILEGES ON employee.* TO 'empapp'@'localhost';
+
+18. 
+remove h2 from pom
+add dependencies for mysql
+<!-- add the mysql dependency -->
+  <dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+</dependency>
+
+
+add properties for database
+
+# mysql properties
+
+spring.datasource.url=jdbc:mysql://mysqldbinstance.cusgvfry1fwy.ap-south-1.rds.amazonaws.com:3306/employee
+spring.datasource.username=empapp
+spring.datasource.password=empapppassword    
+
+19. setup a test profile
+add application-test.properties
+add entries for in memory database h2
+annotate test with test profle 
+@ActiveProfiles("test")
+
+20. the sql syntax will throw an error if not compliant
+
+CREATE TABLE employee (
+    id          INT NOT NULL,
+    department  VARCHAR(50) NOT NULL,
+    emp_name    VARCHAR(50) NOT NULL,
+    emp_no      VARCHAR(50) NOT NULL UNIQUE,
+    PRIMARY KEY(id)
+);
+
+CREATE INDEX idx_emp_no
+    ON employee (emp_no);
+
+21. table names are case sensitive in MYSQL
+change the table name to employee
